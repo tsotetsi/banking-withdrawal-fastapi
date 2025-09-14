@@ -4,9 +4,9 @@ from app.domain.models import BankAccount
 
 # Default seeded accounts for testing
 DEFAULT_ACCOUNTS: dict[str, BankAccount] = {
-    "1234567890": BankAccount(id="1234567890", balance=Decimal("1000.00")),
-    "0987654321": BankAccount(id="0987654321", balance=Decimal("500.00")),
-    "1111111111": BankAccount(id="1111111111", balance=Decimal("0.00")),
+    "1234567890": BankAccount(id="1234567890", account_number="1234567890", balance=Decimal("1000.00")),
+    "0987654321": BankAccount(id="0987654321", account_number="0987654321", balance=Decimal("500.00")),
+    "1111111111": BankAccount(id="1111111111", account_number="1111111111", balance=Decimal("0.00")),
 }
 
 
@@ -19,7 +19,7 @@ class InMemoryAccountRepository:
     def reset(self):
         # copy defaults fresh for each test run
         self.accounts: dict[str, BankAccount] = {
-            k: BankAccount(id=v.id, balance=Decimal(v.balance))
+            k: BankAccount(id=v.id, account_number=v.account_number, balance=Decimal(v.balance))
             for k, v in DEFAULT_ACCOUNTS.items()
         }
 

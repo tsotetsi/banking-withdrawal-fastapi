@@ -9,6 +9,7 @@ from typing import Optional
 class BankAccount:
     """A simple bank account model."""
     id: str
+    account_number: str
     balance: Decimal
     created_at: Optional[datetime] = None
     updated_at: Optional[datetime] = None
