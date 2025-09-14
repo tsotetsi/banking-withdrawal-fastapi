@@ -11,8 +11,8 @@ class BankAccount:
     id: str
     account_number: str
     balance: Decimal
-    created_at: Optional[datetime] = None
-    updated_at: Optional[datetime] = None
+    created_at: datetime
+    updated_at: datetime
 
 
 class WithdrawalStatus(Enum):
