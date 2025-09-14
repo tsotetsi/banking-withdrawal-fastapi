@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from enum import Enum
 from typing import Optional
@@ -28,5 +28,5 @@ class WithdrawalEvent:
     amount: Decimal
     new_balance: Decimal
     status: WithdrawalStatus = WithdrawalStatus.PENDING
-    timestamp: datetime = datetime.now()
+    timestamp: datetime = datetime.now(timezone.utc)
     error_message: Optional[str] = None
