@@ -4,6 +4,7 @@ from uuid import uuid4
 from .models import WithdrawalEvent, WithdrawalStatus
 from .exceptions import InsufficientFundsError
 from app.schemas.withdrawal import WithdrawalRequest
+from app.infrastructure.event_bus import get_event_publisher
 
 
 logger = structlog.get_logger()
@@ -14,7 +15,7 @@ class WithdrawalService:
 
     def __init__(self, repository, event_publisher):
         self.repository = repository
-        self.event_publisher = event_publisher
+        self.event_publisher = event_publisher or get_event_publisher()
 
     def withdraw(self, withdrawal_request: WithdrawalRequest) -> WithdrawalEvent:
         """Process a withdrawal and send an event."""

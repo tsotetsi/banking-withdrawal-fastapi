@@ -1,10 +1,11 @@
+import os
 from datetime import datetime
 from fastapi import FastAPI
 
 from app.infrastructure.middleware import CorrelationIdMiddleware, LatencyMiddleware
 from app.infrastructure.logging import setup_logging
+from app.infrastructure.repository import reset_mock_accounts
 from app.api.v1 import withdrawal
-
 
 setup_logging()
 
@@ -31,6 +32,12 @@ app = FastAPI(
     "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
     }
 )
+
+@app.on_event("startup")
+async def startup_event():
+    if os.getenv("ENVIRONMENT") == "local":
+        reset_mock_accounts()
+        print("Initialized test accounts")
 
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(LatencyMiddleware)
