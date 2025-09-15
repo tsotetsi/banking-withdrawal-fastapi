@@ -3,17 +3,18 @@ fastapi==0.116.1
 uvicorn[standard]==0.35.0 # uvicorn with performance enhancements'.
 
 #---Database---#
-sqlalchemy==2.0.43 # ORM.
-psycopg2-binary==2.9.10 # PostgreSQL adapter.(Synchronous).
-asyncpg==0.30.0 # Async PostgreSQL client.
 alembic==1.16.5 # Database migration tool for SQLAlchemy.
+asyncpg==0.30.0 # Async PostgreSQL client.
+psycopg2-binary==2.9.10 # PostgreSQL adapter.(Synchronous).
+sqlalchemy==2.0.43 # ORM.
 
 #---Security and Validation---#
 pydantic==2.11.9
 
 #---Utilities---#
-python-dotenv==1.1.1
 email-validator==2.3.0 # Required by Pydantic for email validation.(docs)
+python-dotenv==1.1.1
+prometheus-client==0.22.1
 structlog==25.4.0
 
 #---Third-party Services---#

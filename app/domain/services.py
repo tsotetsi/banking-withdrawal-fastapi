@@ -1,6 +1,9 @@
 import uuid
-from uuid import uuid4
 from datetime import datetime, timezone
+from uuid import uuid4
+import time
+
+from prometheus_client import Counter, Histogram
 import structlog
 
 from .exceptions import InsufficientFundsError
@@ -11,6 +14,25 @@ from app.infrastructure.event_bus import get_event_publisher
 
 logger = structlog.get_logger()
 
+# Business metrics.
+WITHDRAWAL_COUNT = Counter(
+    'withdrawal_requests_total',
+    'Total withdrawal requests',
+    ['status', 'account_id']
+)
+
+WITHDRAWAL_AMOUNT = Histogram(
+    'withdrawal_amount',
+    'Withdrawal amount distribution',
+    ['status'],
+    buckets=[10, 50, 100, 500, 1000, 5000]
+)
+
+TRANSACTION_LATENCY = Histogram(
+    'transaction_processing_seconds',
+    'Transaction processing time',
+    ['type']
+)
 
 class WithdrawalService:
     """Service to handle withdrawal operations."""
@@ -27,42 +49,54 @@ class WithdrawalService:
             amount=str(withdrawal_request.amount),
             correlation_id=withdrawal_request.correlation_id,
         )
+        start_time = time.time()
 
-        account = self.repository.get_account(withdrawal_request.account_id)
-        if not account:
-            log.warning("account_not_found")
-            raise ValueError("Account not found.")
+        try:
+            account = self.repository.get_account(withdrawal_request.account_id)
+            if not account:
+                log.warning("account_not_found")
+                raise ValueError("Account not found.")
 
-        if account.balance < withdrawal_request.amount:
-            log.warning("insufficient_funds", balance=account.balance)
-            raise InsufficientFundsError("Insufficient funds.")
-        previous_balance = account.balance
-        account.balance -= withdrawal_request.amount
-        self.repository.update_account(account)
+            if account.balance < withdrawal_request.amount:
+                log.warning("insufficient_funds", balance=account.balance)
+                raise InsufficientFundsError("Insufficient funds.")
+            previous_balance = account.balance
+            account.balance -= withdrawal_request.amount
+            self.repository.update_account(account)
 
-        transaction_data = {
-            'id': str(uuid.uuid4()),
-            'account_id': account.id,
-            'type': 'WITHDRAWAL',
-            'amount': float(withdrawal_request.amount),
-            'previous_balance': float(previous_balance),
-            'new_balance': float(account.balance),
-            'status': 'SUCCESSFUL',
-            'correlation_id': str(withdrawal_request.correlation_id),
-            'created_at': datetime.now(timezone.utc)
-        }
-        self.repository.create_transaction(transaction_data)
+            transaction_data = {
+                'id': str(uuid.uuid4()),
+                'account_id': account.id,
+                'type': 'WITHDRAWAL',
+                'amount': float(withdrawal_request.amount),
+                'previous_balance': float(previous_balance),
+                'new_balance': float(account.balance),
+                'status': 'SUCCESSFUL',
+                'correlation_id': str(withdrawal_request.correlation_id),
+                'created_at': datetime.now(timezone.utc)
+            }
+            self.repository.create_transaction(transaction_data)
 
-        event = WithdrawalEvent(
-            account_id=account.id,
-            amount=withdrawal_request.amount,
-            status=WithdrawalStatus.SUCCESSFUL,
-            new_balance=account.balance,
-        )
+            event = WithdrawalEvent(
+                account_id=account.id,
+                amount=withdrawal_request.amount,
+                status=WithdrawalStatus.SUCCESSFUL,
+                new_balance=account.balance,
+            )
 
-        log = log.bind(transaction_id=str(uuid4()))
-        log.info("withdrawal_success", amount=str(event.amount), new_balance=str(event.new_balance))
+            log = log.bind(transaction_id=str(uuid4()))
+            log.info("withdrawal_success", amount=str(event.amount), new_balance=str(event.new_balance))
 
+            self.event_publisher.publish(event)
 
-        self.event_publisher.publish(event)
-        return event
+            WITHDRAWAL_COUNT.labels(status='success', account_id=withdrawal_request.account_id).inc()
+            WITHDRAWAL_AMOUNT.labels(status='success').observe(float(withdrawal_request.amount))
+            
+            return event
+        except Exception as e:
+            WITHDRAWAL_COUNT.labels(status='failed', account_id=withdrawal_request.account_id).inc()
+            raise e
+        finally:
+            # Record processing time.
+            processing_time = time.time() - start_time
+            TRANSACTION_LATENCY.labels(type='withdrawal').observe(processing_time)

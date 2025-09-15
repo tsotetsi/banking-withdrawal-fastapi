@@ -73,7 +73,16 @@ services:
       retries: 3
       start_period: 30s
     restart: on-failure
-  
+
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: banking-node-exporter
+    ports:
+      - "9100:9100"
+    networks:
+      - banking-network
+    restart: unless-stopped
+
   prometheus:
     image: prom/prometheus:latest
     container_name: banking-prometheus
@@ -81,8 +90,12 @@ services:
       - ./prometheus:/etc/prometheus # Mount local config directory
       - prometheus_data:/prometheus # Persistent data storage
     command:
-    - '--config.file=/etc/prometheus/prometheus.yml'
-    - '--storage.tsdb.path=/prometheus'
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
     ports:
       - "9090:9090"
     networks:
@@ -99,10 +112,14 @@ services:
     image: grafana/grafana
     container_name: grafana
     restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+      - GF_USERS_ALLOW_SIGN_UP=false
     ports:
       - '3000:3000'
     volumes:
       - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
     networks:
       - banking-network
     healthcheck:
@@ -111,6 +128,8 @@ services:
       timeout: 30s
       retries: 5
       start_period: 30s
+    depends_on:
+      - prometheus
 
 volumes:
   postgres_data:

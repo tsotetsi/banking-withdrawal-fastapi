@@ -1,8 +1,10 @@
 import os
 from datetime import datetime
-from fastapi import FastAPI
 
-from app.infrastructure.middleware import CorrelationIdMiddleware, LatencyMiddleware
+from fastapi import FastAPI, Response
+from prometheus_client import generate_latest
+
+from app.infrastructure.middleware import CorrelationIdMiddleware, LatencyMiddleware, MetricsMiddleware
 from app.infrastructure.logging import setup_logging
 from app.infrastructure.repository import reset_mock_accounts
 from app.api.v1 import withdrawal
@@ -41,6 +43,7 @@ async def startup_event():
 
 app.add_middleware(CorrelationIdMiddleware)
 app.add_middleware(LatencyMiddleware)
+app.add_middleware(MetricsMiddleware)
 
 app.include_router(
     withdrawal.router,
@@ -56,3 +59,7 @@ async def root():
         "version": "1.0.0",
         "since": datetime.now().isoformat()
     }
+
+@app.get("/metrics")
+async def metrics():
+    return Response(content=generate_latest(), media_type="text/plain")

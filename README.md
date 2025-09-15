@@ -15,41 +15,26 @@ A FastAPI-based banking core withdrawal service with full observability, audit l
 
 ## 🚀 Getting Started
 
-### Prerequisites
+#### Prerequisites
 - Python 3.13+
-- pip package manager
+- Docker and Docker compose
 
-### Installation
+#### Installation
 
 ```bash
-# Clone the repository
+#### Clone the repository
 git clone [here](https://github.com/tsotetsi/banking-withdrawal-fastapi.git)
 cd banking-withdrawal-fastapi
-
-# Create virtual environment
-python -m venv .venv
-source .venv/bin/activate  # On Windows: .venv\Scripts\activate
-
-# Install dependencies
-pip install -r requirements/local.txt
-
-
-### Running the Application
-# Start the FastAPI server with auto-reload
-uvicorn app.main:app --reload
 ```
+### 🐳 Docker Support
 
-### 📚 After Running Uvicorn
+Run the following commad to spin-off all system services.
 
-Once the server is running (typically at http://localhost:8000), you can access:
+See `.env.example` for env values that you need to setup.
 
-### 🔍 Interactive API Documentation
-
-Swagger UI: http://localhost:8000/docs
-
-Interactive API explorer with try-it-out functionality.
-
-Full endpoint documentation with request/response schemas.
+```bash
+docker compose up --build
+```
 
 ### 📖 Alternative Documentation
 
@@ -100,29 +85,35 @@ app/
 
 Withdrawal Request Example
 ```bash
-curl -X POST "http://localhost:8000/api/v1/withdrawal" \
-  -H "Content-Type: application/json" \
-  -d '{
-    "account_id": "1234567890",
-    "amount": 100.50,
-    "correlation_id": "req-12345"
+curl -X POST "http://localhost:8000/api/v1/withdrawal"   -H "Content-Type: application/json"   -d '{
+    "account_id": "1234567",
+    "amount": 50.00,
+    "correlation_id": "123e4567-e89b-12d3-a456-426614174001"
   }'
-Example Response
-json
+```
+
+**Example Response**
+
+```json
 {
-  "transaction_id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
-  "account_id": "1234567890",
-  "amount": 100.50,
-  "balance": 899.50,
-  "correlation_id": "req-12345"
+  "transaction_id":"f4f3128e-bdd7-4cda-bb6c-0e0cc885bc3d","account_id":"42a52f24-7359-4b31-8dac-b884bb4eb861","amount":"50.00","balance":"600.00","correlation_id":"123e4567-e89b-12d3-a456-426614174001"
 }
 ```
 
-### 🐳 Docker Support (Coming Soon)
+## Access Grafana
+- Go to: http://localhost:3000
+Login: admin/admin
 
-Dockerfile for containerized deployment
+- Add Prometheus datasource: http://prometheus:9090
 
-docker-compose for local development with databases.
+- Create dashboard or import the banking dashboard
+
+- Available Metrics:
+**http_requests_total** - Request count by endpoint and status
+**http_request_duration_seconds** - Request latency
+**withdrawal_requests_total** - Withdrawal success/failure rates
+**withdrawal_amount** - Distribution of withdrawal amounts
+**transaction_processing_seconds** - Transaction processing time
 
 ### 📝 License
 
