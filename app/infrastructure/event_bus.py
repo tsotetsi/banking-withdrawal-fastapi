@@ -1,12 +1,15 @@
 import boto3
 import json
-from botocore.config import Config
-from app.domain.models import WithdrawalEvent
 import os
-import logging
-from typing import Optional
+import structlog
 
-logger = logging.getLogger(__name__)
+from botocore.config import Config
+
+from app.domain.models import WithdrawalEvent
+
+
+logger = structlog.get_logger()
+
 
 class LocalStackEventPublisher:
     """AWS SNS event publisher using LocalStack."""
@@ -16,7 +19,7 @@ class LocalStackEventPublisher:
         self.region = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
         self.topic_arn = os.getenv("WITHDRAWAL_TOPIC_ARN")
         
-        # Configure boto3 for LocalStack
+        # Configure boto3 for LocalStack.
         self.config = Config(
             retries={
                 'max_attempts': 3,
@@ -33,14 +36,14 @@ class LocalStackEventPublisher:
             config=self.config
         )
         
-        # Ensure topic exists
+        # Ensure topic exists.
         self._ensure_topic()
     
     def _ensure_topic(self) -> None:
         """Ensure the SNS topic exists."""
         try:
             self.sns_client.create_topic(Name="withdrawal-events")
-            logger.info("SNS topic 'withdrawal-events' created or already exists")
+            logger.info("SNS topic 'withdrawal-events' created or already exists.")
         except Exception as e:
             logger.warning(f"Could not create SNS topic: {e}")
     
@@ -52,7 +55,7 @@ class LocalStackEventPublisher:
             raise ValueError("WithdrawalEvent.new_balance cannot be None.")
         
         try:
-            # Convert event to JSON-serializable format
+            # Convert event to JSON-serializable format.
             event_data = {
                 "account_id": event.account_id,
                 "amount": float(event.amount),
@@ -94,7 +97,6 @@ class LocalStackEventPublisher:
                 f"Failed to publish event to SNS: {e}",
                 extra={"event": event_data}
             )
-            # You might want to implement a fallback or retry mechanism here
             raise
 
 class InMemoryEventPublisher:
@@ -113,11 +115,11 @@ class InMemoryEventPublisher:
         logger.info(f"Published event to in-memory bus: {event}")
 
 
-# Factory function to get the appropriate publisher
+# Factory function to get the appropriate publisher.
 def get_event_publisher() -> LocalStackEventPublisher:
     """Get event publisher based on environment."""
     if os.getenv("ENVIRONMENT") in ["local", "development"] and os.getenv("AWS_ENDPOINT_URL"):
         return LocalStackEventPublisher()
     else:
-        # Fallback to in-memory for testing without LocalStack
+        # Fallback to in-memory for testing without LocalStack.
         return InMemoryEventPublisher() # type: ignore

@@ -47,9 +47,9 @@ app.include_router(
     prefix="/api/v1",
 )
 
-@app.get("/")
+@app.get("/health")
 async def root():
-    """Root endpoint to verify service is running."""
+    """Health endpoint to verify service is running."""
     return {
         "message": "Welcome to the Banking Core Withdrawal API Service!",
         "status": "Running",

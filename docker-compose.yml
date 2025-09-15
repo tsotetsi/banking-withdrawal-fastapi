@@ -1,0 +1,124 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: banking-postgres
+    environment:
+      POSTGRES_USER: banking_user
+      POSTGRES_PASSWORD: banking_password
+      POSTGRES_DB: banking_core
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U banking_user -d banking_core"]
+      interval: 30s
+      timeout: 30s
+      retries: 5
+    restart: on-failure
+
+  api:
+    build:
+      context: .
+      args:
+        - ENVIRONMENT=local
+    container_name: banking-api
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    restart: on-failure
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import http.client; conn = http.client.HTTPConnection('localhost', 8000); conn.request('GET', '/health'); exit(0) if conn.getresponse().status == 200 else exit(1)"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      postgres:
+        condition: service_healthy
+  
+  localstack:
+    image: localstack/localstack:4.8.0
+    container_name: banking-localstack
+    ports:
+      - "4566:4566"
+      - "4571:4571"
+    environment:
+      - SERVICES=sns,sqs
+      - DEBUG=0
+      - PERSISTENCE=1
+      - EDGE_PORT=4566
+    volumes:
+      - "localstack_data:/var/lib/localstack"
+    networks:
+      - banking-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.50'
+          memory: 512M
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD-SHELL", "awslocal sns list-topics && awslocal sqs list-queues && echo 'LocalStack services are ready'"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
+    restart: on-failure
+  
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: banking-prometheus
+    volumes:
+      - ./prometheus:/etc/prometheus # Mount local config directory
+      - prometheus_data:/prometheus # Persistent data storage
+    command:
+    - '--config.file=/etc/prometheus/prometheus.yml'
+    - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9090:9090"
+    networks:
+      - banking-network
+    restart: on-failure
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:9090/-/healthy && wget --no-verbose --tries=1 --spider http://localhost:9090/-/ready || exit 1"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+  grafana:
+    image: grafana/grafana
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - banking-network
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-verbose --tries=1 --spider http://localhost:3000/api/health || exit 1"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  postgres_data:
+  localstack_data:
+  prometheus_data:
+    driver: local # Use local driver for persistence.
+  grafana_data:
+
+networks:
+  banking-network:
+    driver: bridge
