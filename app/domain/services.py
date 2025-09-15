@@ -1,8 +1,10 @@
-import structlog
+import uuid
 from uuid import uuid4
+from datetime import datetime, timezone
+import structlog
 
-from .models import WithdrawalEvent, WithdrawalStatus
 from .exceptions import InsufficientFundsError
+from .models import WithdrawalEvent, WithdrawalStatus
 from app.schemas.withdrawal import WithdrawalRequest
 from app.infrastructure.event_bus import get_event_publisher
 
@@ -34,9 +36,22 @@ class WithdrawalService:
         if account.balance < withdrawal_request.amount:
             log.warning("insufficient_funds", balance=account.balance)
             raise InsufficientFundsError("Insufficient funds.")
-
+        previous_balance = account.balance
         account.balance -= withdrawal_request.amount
         self.repository.update_account(account)
+
+        transaction_data = {
+            'id': str(uuid.uuid4()),
+            'account_id': account.id,
+            'type': 'WITHDRAWAL',
+            'amount': float(withdrawal_request.amount),
+            'previous_balance': float(previous_balance),
+            'new_balance': float(account.balance),
+            'status': 'SUCCESSFUL',
+            'correlation_id': str(withdrawal_request.correlation_id),
+            'created_at': datetime.now(timezone.utc)
+        }
+        self.repository.create_transaction(transaction_data)
 
         event = WithdrawalEvent(
             account_id=account.id,

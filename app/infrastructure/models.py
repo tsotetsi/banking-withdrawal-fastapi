@@ -25,6 +25,7 @@ class TransactionModel(Base):
     id = Column(UUID, primary_key=True, default=uuid.uuid4)
     account_id = Column(UUID, nullable=False, index=True)
     type = Column(String(10), nullable=False)  # "withdrawal"
+    status = Column(String(10), nullable=False)
     amount = Column(Numeric(12, 2), nullable=False)
     previous_balance = Column(Numeric(12, 2), nullable=False)
     new_balance = Column(Numeric(12, 2), nullable=False)
