@@ -30,8 +30,8 @@ app = FastAPI(
     "url": "https://tsotetsi.com/contact"
     },
     license_info={
-    "name": "Apache 2.0",
-    "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
+    "name": "MIT License",
+    "url": "https://opensource.org/licenses/MIT"
     }
 )
 

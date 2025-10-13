@@ -12,6 +12,22 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1024M
+        reservations:
+          memory: 256M
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL # Drop all Linux capabilities for maximum security.
+    cap_add:
+      - CHOWN # Needed for file ownership changes on initialization.
+      - DAC_OVERRIDE # Needed for file permission checks.
+      - SETGID # Needed to set group ID.
+      - SETUID # Needed to set user ID.
     networks:
       - banking-network
     healthcheck:
@@ -78,7 +94,7 @@ services:
     image: prom/node-exporter:latest
     container_name: banking-node-exporter
     ports:
-      - "9100:9100"
+      - "9990:9100"
     networks:
       - banking-network
     restart: unless-stopped
@@ -87,8 +103,8 @@ services:
     image: prom/prometheus:latest
     container_name: banking-prometheus
     volumes:
-      - ./prometheus:/etc/prometheus # Mount local config directory
-      - prometheus_data:/prometheus # Persistent data storage
+      - ./prometheus:/etc/prometheus # Mount local config directory.
+      - prometheus_data:/prometheus # Persistent data storage.
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'

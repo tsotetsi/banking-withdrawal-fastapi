@@ -1,6 +1,19 @@
 # Banking Core Withdrawal API
 
-A FastAPI-based banking core withdrawal service with full observability, audit logging, and domain-driven design.
+<div align="center">
+
+  [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
+  [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+  [![Pydantic](https://img.shields.io/badge/-Pydantic-464646?logo=Pydantic)](https://docs.pydantic.dev/latest/)
+  [![Python](https://img.shields.io/badge/Python-3.13+-3776ab?logo=python&logoColor=white)](https://www.python.org/)
+  [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-17+-316192?style=flat&logo=postgresql&logoColor=white)](https://www.postgresql.org)
+  [![Prometheus](https://img.shields.io/badge/prometheus-3.0.6-fab005?style=flat&logo=prometheus)](https://prometheus.io/docs/introduction/overview/)
+  [![Grafana](https://img.shields.io/badge/grafana-12.2-fab005?style=flat&logo=grafana)](https://grafana.com/docs/)
+  [![License](https://img.shields.io/badge/License-MIT-green)](LICENSE)
+
+</div>
+
+> A FastAPI-based banking core withdrawal service with full observability, audit logging, and domain-driven design approach.
 
 ## Features
 
@@ -22,8 +35,8 @@ A FastAPI-based banking core withdrawal service with full observability, audit l
 #### Installation
 
 ```bash
-#### Clone the repository
-git clone [here](https://github.com/tsotetsi/banking-withdrawal-fastapi.git)
+# Clone the repository
+git clone https://github.com/tsotetsi/banking-withdrawal-fastapi.git
 cd banking-withdrawal-fastapi
 ```
 ### 🐳 Docker Support
@@ -38,19 +51,11 @@ docker compose up --build
 
 ### 📖 Alternative Documentation
 
-ReDoc: http://localhost:8000/redoc
+- ReDoc: http://localhost:8000/redoc
 
-Beautiful, responsive API documentation.
+- Beautiful, responsive API documentation.
 
-Better for reading and understanding API structure.
-
-### 🏠 API Root & Health Check
-
-Root Endpoint: http://localhost:8000/
-
-Welcome message and API status
-
-Health Check: http://localhost:8000/health
+- Better for reading and understanding API structure.
 
 
 ### 🧪 Testing
@@ -117,7 +122,7 @@ Login: admin/admin
 
 ### 📝 License
 
-Apache 2.0 - See LICENSE file for details.
+MIT License - See LICENSE file for details.
 
 ### 🤝 Contributing
 

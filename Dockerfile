@@ -1,56 +1,74 @@
 # ===== STAGE 1: Builder ===== #
-FROM python:3.13-slim-bullseye AS builder
+FROM python:3.13-alpine@sha256:3a77fbbb5bc88c0f63cc2692a13b011547f25ee93536e991544c452801856226 AS builder
 
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
+# Prevent Python from writing .pyc files and buffer output.
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1
 
-# Accept build argument for environment.
+# Build argument for environment-specific dependencies.
 ARG ENVIRONMENT=local
+
+# Install build dependencies for python packages with security updates.
+RUN set -eux && \
+    apk update && \
+    apk add --no-cache \
+        build-base \
+        postgresql-dev && \
+    apk upgrade --no-cache -U && \
+    rm -rf /var/cache/apk/*
 
 WORKDIR /app
 
+# Copy only requirements first (for better layer caching).
 COPY requirements/ ./requirements/
 
-# Create virtual environment and upgrade pip.
+# Create venv and install base + env-specific deps.
 RUN python -m venv /opt/venv && \
     /opt/venv/bin/pip install --no-cache-dir --upgrade pip wheel setuptools && \
-    /opt/venv/bin/pip install --no-cache-dir -r requirements/base.txt
-
-# Install environment-specific requirements
-RUN if [ "$ENVIRONMENT" = "local" ] && [ -f "requirements/local.txt" ]; then \
-    /opt/venv/bin/pip install --no-cache-dir -r requirements/local.txt; \
+    /opt/venv/bin/pip install --no-cache-dir -r requirements/base.txt && \
+    if [ "$ENVIRONMENT" = "local" ] && [ -f "requirements/local.txt" ]; then \
+        /opt/venv/bin/pip install --no-cache-dir -r requirements/local.txt; \
     elif [ "$ENVIRONMENT" = "production" ] && [ -f "requirements/production.txt" ]; then \
-    /opt/venv/bin/pip install --no-cache-dir -r requirements/production.txt; \
+        /opt/venv/bin/pip install --no-cache-dir -r requirements/production.txt; \
     fi
 
 # ===== STAGE 2: Runtime ===== #
-FROM python:3.13-slim-bullseye
+FROM python:3.13-alpine@sha256:3a77fbbb5bc88c0f63cc2692a13b011547f25ee93536e991544c452801856226
 
-# Create non-root user and group with explicit UID/GID.
-RUN groupadd --system --gid 1000 appgroup && \
-    useradd --system --uid 1000 --gid appgroup --shell /bin/bash --create-home appuser && \
-    echo 'appuser ALL=(ALL) NOPASSWD: ALL' >> /etc/sudoers
+# Install only runtime dependencies with security updates.
+RUN set -eux && \
+    apk update && \
+    apk add --no-cache libpq && \
+    apk upgrade --no-cache -U && \
+    rm -rf /var/cache/apk/*
+
+# Create non-root user with explicit UID/GID (security best practice).
+RUN addgroup -g 1000 -S appgroup && \
+    adduser -u 1000 -S appuser -G appgroup -s /bin/sh -D
 
 WORKDIR /app
 
-# Set correct ownership for the app dir.
-RUN chown appuser:appgroup /app
-
-# Copy venv from builder.
+# Copy virtual environment from builder.
 COPY --from=builder /opt/venv /opt/venv
 
-# Update ownership of venv.
-RUN chown -R appuser:appgroup /opt/venv
+# Ensure appuser owns the app directory and venv.
+RUN chown -R appuser:appgroup /app /opt/venv
 
-# Add venv to PATH.
+# Activate venv by adding to PATH.
 ENV PATH="/opt/venv/bin:$PATH"
 
-COPY --chown=appuser:appgroup ./app/ ./app/
-
-# Switch to non-root user.
+# Switch to non-root user (principle of least privilege).
 USER appuser
 
-RUN whoami && id
+# Copy application code (as appuser to avoid root-owned files).
+COPY --chown=appuser:appgroup ./app/ ./app/
+
+# Copy entrypoint script and make it executable.
+COPY --chown=appuser:appgroup ./scripts/docker-entrypoint.sh /app/
+RUN chmod +x /app/docker-entrypoint.sh
+
+
+ENTRYPOINT [ "/app/docker-entrypoint.sh" ]
 
 EXPOSE 8000
 
