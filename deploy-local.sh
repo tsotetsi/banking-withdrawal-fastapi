@@ -52,4 +52,4 @@ echo "Current status:"
 kubectl get pods -n banking
 
 echo "To access your application:"
-kubectl port-forward -n banking service/banking-api 8080:80
+kubectl port-forward -n banking service/banking-api 8090:80
