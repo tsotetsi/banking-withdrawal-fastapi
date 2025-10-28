@@ -70,8 +70,9 @@ pytest --cov=app --cov-report=html
 pytest tests/unit/ -v
 pytest tests/integration/ -v
 ```
-### 🏗️ Architecture(DDD directory structure)
 
+### 🏗️ Architecture(DDD directory structure)
+```text
 app/
 ├── domain/           # Business logic layer
 │   ├── models.py     # Domain models
@@ -85,7 +86,7 @@ app/
 │   └── withdrawal.py # Request/response schemas
 └── api/              # HTTP layer
     └── v1/           # API versioning
-
+```
 ### 📡 API Usage
 
 Withdrawal Request Example
