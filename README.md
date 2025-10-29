@@ -127,10 +127,10 @@ MIT License - See LICENSE file for details.
 
 ### 🤝 Contributing
 
-Fork the repository.
+- Fork the repository.
 
-Create a feature branch.
+- Create a feature branch.
 
-Add tests for new functionality.
+- Add tests for new functionality.
 
-Submit a pull request.
+- Submit a pull request.
